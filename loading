@@ -1,6 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CampaignFolder = workspace:WaitForChild("Campaign")
-local UserInputService = game:GetService("UserInputService")
 local CustomScreenGui = Instance.new("ScreenGui")
 local SelectButton = Instance.new("TextButton")
 local ScrollFrame = Instance.new("ScrollingFrame")
@@ -86,46 +85,6 @@ SelectButton.MouseButton1Click:Connect(function()
     ScrollFrame.Visible = not ScrollFrame.Visible
 end)
 
--- Function to wait for the button and simulate a click
-local function waitForAndClickOkButton()
-    local player = game.Players.LocalPlayer
-    local screenGui = player:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui")
-    if screenGui then
-        local wonFrame = screenGui:FindFirstChild("Won")
-        if wonFrame then
-            local okButton = wonFrame:FindFirstChild("Ok")
-            while not okButton do
-                wait(0.1) -- Wait for 0.1 seconds before checking again
-                okButton = wonFrame:FindFirstChild("Ok")
-            end
-            if okButton and okButton:IsA("TextButton") then
-                local okButtonPosition = okButton.AbsolutePosition
-                local okButtonSize = okButton.AbsoluteSize
-
-                -- Simulate a mouse click at the position of the button
-                UserInputService.InputBegan:Fire({
-                    UserInputType = Enum.UserInputType.MouseButton1,
-                    Position = Vector2.new(okButtonPosition.X + okButtonSize.X/2, okButtonPosition.Y + okButtonSize.Y/2)
-                })
-
-                UserInputService.InputEnded:Fire({
-                    UserInputType = Enum.UserInputType.MouseButton1,
-                    Position = Vector2.new(okButtonPosition.X + okButtonSize.X/2, okButtonPosition.Y + okButtonSize.Y/2)
-                })
-                
-                return true
-            else
-                warn("Ok button not found or not a TextButton")
-            end
-        else
-            warn("Won frame not found")
-        end
-    else
-        warn("ScreenGui not found")
-    end
-    return false
-end
-
 -- Script to run when Start button is clicked
 local function startScript()
     if not selectedItem then
@@ -150,15 +109,7 @@ local function startScript()
             ReplicatedStorage:WaitForChild("Events"):WaitForChild("BattleResult"):FireServer(unpack(args))
 
             wait(1)
-
-            -- Simulate the Ok button click
-            local clicked = waitForAndClickOkButton()
-            if not clicked then
-                wait(1) -- Wait a bit longer if the button wasn't found/clicked
-            end
-
-            wait(1)
-            wait(2) -- Add a 0.5-second wait between each cycle
+            wait(0.5) -- Add a 0.5-second wait between each cycle
         end
     end)
 
