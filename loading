@@ -1,0 +1,176 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CampaignFolder = workspace:WaitForChild("Campaign")
+local UserInputService = game:GetService("UserInputService")
+local CustomScreenGui = Instance.new("ScreenGui")
+local SelectButton = Instance.new("TextButton")
+local ScrollFrame = Instance.new("ScrollingFrame")
+local SearchBar = Instance.new("TextBox")
+local StartButton = Instance.new("TextButton")
+local StopButton = Instance.new("TextButton")
+local selectedItem = nil
+local running = false
+local loopCoroutine = nil
+
+-- CustomScreenGui
+CustomScreenGui.Name = "CustomScreenGui"
+CustomScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Select Button
+SelectButton.Size = UDim2.new(0, 200, 0, 50)
+SelectButton.Position = UDim2.new(0, 10, 0, 10)
+SelectButton.Text = "Select"
+SelectButton.Parent = CustomScreenGui
+
+-- Search Bar
+SearchBar.Size = UDim2.new(1, -20, 0, 30)
+SearchBar.Position = UDim2.new(0, 10, 0, 10)
+SearchBar.PlaceholderText = "Search..."
+SearchBar.Parent = ScrollFrame
+
+-- ScrollFrame
+ScrollFrame.Size = UDim2.new(0, 200, 0, 300)
+ScrollFrame.Position = UDim2.new(0, 10, 0, 70)
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 5, 0) -- Adjust based on the number of items
+ScrollFrame.Visible = false
+ScrollFrame.Parent = CustomScreenGui
+
+-- Start Button
+StartButton.Size = UDim2.new(0, 200, 0, 50)
+StartButton.Position = UDim2.new(0, 220, 0, 10)
+StartButton.Text = "Start"
+StartButton.Parent = CustomScreenGui
+
+-- Stop Button
+StopButton.Size = UDim2.new(0, 200, 0, 50)
+StopButton.Position = UDim2.new(0, 220, 0, 70)
+StopButton.Text = "Stop"
+StopButton.Parent = CustomScreenGui
+
+local function clearScrollFrame()
+    for _, child in pairs(ScrollFrame:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+end
+
+local function populateScrollFrame(searchText)
+    clearScrollFrame()
+    local yPos = 50
+    for _, item in pairs(CampaignFolder:GetChildren()) do
+        if not searchText or string.find(item.Name:lower(), searchText:lower()) then
+            local itemButton = Instance.new("TextButton")
+            itemButton.Size = UDim2.new(1, -20, 0, 50)
+            itemButton.Position = UDim2.new(0, 10, 0, yPos)
+            itemButton.Text = item.Name
+            itemButton.Parent = ScrollFrame
+            yPos = yPos + 50
+
+            itemButton.MouseButton1Click:Connect(function()
+                selectedItem = item
+                SelectButton.Text = "Selected: " .. item.Name
+                ScrollFrame.Visible = false
+            end)
+        end
+    end
+end
+
+populateScrollFrame()
+
+SearchBar:GetPropertyChangedSignal("Text"):Connect(function()
+    populateScrollFrame(SearchBar.Text)
+end)
+
+-- Toggle ScrollFrame visibility
+SelectButton.MouseButton1Click:Connect(function()
+    ScrollFrame.Visible = not ScrollFrame.Visible
+end)
+
+-- Function to wait for the button and simulate a click
+local function waitForAndClickOkButton()
+    local player = game.Players.LocalPlayer
+    local screenGui = player:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui")
+    if screenGui then
+        local wonFrame = screenGui:FindFirstChild("Won")
+        if wonFrame then
+            local okButton = wonFrame:FindFirstChild("Ok")
+            while not okButton do
+                wait(0.1) -- Wait for 0.1 seconds before checking again
+                okButton = wonFrame:FindFirstChild("Ok")
+            end
+            if okButton and okButton:IsA("TextButton") then
+                local okButtonPosition = okButton.AbsolutePosition
+                local okButtonSize = okButton.AbsoluteSize
+
+                -- Simulate a mouse click at the position of the button
+                UserInputService.InputBegan:Fire({
+                    UserInputType = Enum.UserInputType.MouseButton1,
+                    Position = Vector2.new(okButtonPosition.X + okButtonSize.X/2, okButtonPosition.Y + okButtonSize.Y/2)
+                })
+
+                UserInputService.InputEnded:Fire({
+                    UserInputType = Enum.UserInputType.MouseButton1,
+                    Position = Vector2.new(okButtonPosition.X + okButtonSize.X/2, okButtonPosition.Y + okButtonSize.Y/2)
+                })
+                
+                return true
+            else
+                warn("Ok button not found or not a TextButton")
+            end
+        else
+            warn("Won frame not found")
+        end
+    else
+        warn("ScreenGui not found")
+    end
+    return false
+end
+
+-- Script to run when Start button is clicked
+local function startScript()
+    if not selectedItem then
+        warn("No item selected!")
+        return
+    end
+
+    running = true
+
+    loopCoroutine = coroutine.create(function()
+        while running do
+            local args = {
+                [1] = selectedItem
+            }
+            ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestBattle"):FireServer(unpack(args))
+
+            wait(2)
+
+            local args = {
+                [1] = "Won"
+            }
+            ReplicatedStorage:WaitForChild("Events"):WaitForChild("BattleResult"):FireServer(unpack(args))
+
+            wait(1)
+
+            -- Simulate the Ok button click
+            local clicked = waitForAndClickOkButton()
+            if not clicked then
+                wait(1) -- Wait a bit longer if the button wasn't found/clicked
+            end
+
+            wait(1)
+        end
+    end)
+
+    coroutine.resume(loopCoroutine)
+end
+
+-- Script to stop when Stop button is clicked
+local function stopScript()
+    running = false
+    if loopCoroutine then
+        coroutine.close(loopCoroutine)
+    end
+end
+
+StartButton.MouseButton1Click:Connect(startScript)
+StopButton.MouseButton1Click:Connect(stopScript)
