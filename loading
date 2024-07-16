@@ -6,9 +6,11 @@ local ScrollFrame = Instance.new("ScrollingFrame")
 local SearchBar = Instance.new("TextBox")
 local StartButton = Instance.new("TextButton")
 local StopButton = Instance.new("TextButton")
+local WaitTimeBox = Instance.new("TextBox")
 local selectedItem = nil
 local running = false
 local loopCoroutine = nil
+local waitTime = 1
 
 -- CustomScreenGui
 CustomScreenGui.Name = "CustomScreenGui"
@@ -44,6 +46,13 @@ StopButton.Size = UDim2.new(0, 200, 0, 50)
 StopButton.Position = UDim2.new(0, 220, 0, 70)
 StopButton.Text = "Stop"
 StopButton.Parent = CustomScreenGui
+
+-- Wait Time Box
+WaitTimeBox.Size = UDim2.new(0, 200, 0, 50)
+WaitTimeBox.Position = UDim2.new(0, 220, 0, 130)
+WaitTimeBox.PlaceholderText = "Enter wait time in seconds"
+WaitTimeBox.Text = ""
+WaitTimeBox.Parent = CustomScreenGui
 
 local function clearScrollFrame()
     for _, child in pairs(ScrollFrame:GetChildren()) do
@@ -92,6 +101,9 @@ local function startScript()
         return
     end
 
+    -- Get wait time from text box
+    waitTime = tonumber(WaitTimeBox.Text) or 1
+
     running = true
 
     loopCoroutine = coroutine.create(function()
@@ -101,7 +113,7 @@ local function startScript()
             }
             ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestBattle"):FireServer(unpack(args))
 
-            wait(1.1)
+            wait(waitTime)
 
             local args = {
                 [1] = "Won"
