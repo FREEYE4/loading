@@ -158,7 +158,7 @@ local function startScript()
             end
 
             wait(1)
-            wait(0.5) -- Add a 0.5-second wait between each cycle
+            wait(2) -- Add a 0.5-second wait between each cycle
         end
     end)
 
