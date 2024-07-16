@@ -101,15 +101,14 @@ local function startScript()
             }
             ReplicatedStorage:WaitForChild("Events"):WaitForChild("RequestBattle"):FireServer(unpack(args))
 
-            wait(2)
+            wait(1)
 
             local args = {
                 [1] = "Won"
             }
             ReplicatedStorage:WaitForChild("Events"):WaitForChild("BattleResult"):FireServer(unpack(args))
 
-            wait(1)
-            wait(0.5) -- Add a 0.5-second wait between each cycle
+            wait(0.5)
         end
     end)
 
